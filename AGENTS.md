@@ -27,6 +27,7 @@ Start with these docs in order:
 3. `docs/frappe-huf/implementation-spec.md`
 4. `docs/frappe-huf/dev-agent-guide.md`
 5. `docs/frappe-huf/phased-plan.md`
+6. `docs/frappe-huf/upstream-sync-map.md`
 
 ## Current TinyKit backend reality
 

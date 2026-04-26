@@ -40,7 +40,7 @@
   import * as storage from "../lib/storage";
   import { get_saved_theme, apply_builder_theme } from "$lib/builder_themes";
   import { setProjectContext } from "../context";
-  import { pb } from "$lib/pocketbase.svelte";
+  import { project_repository } from "$lib/backend";
   import { ProjectStore, setProjectStore } from "./project.svelte";
   import { play_complete, play_tap } from "$lib/sounds";
 
@@ -79,8 +79,8 @@
   $effect(() => {
     if (!data.project_id && data.domain && !project_id) {
       // Look up project by domain using client auth
-      pb.collection("_tk_projects")
-        .getFirstListItem(`domain = "${data.domain}"`)
+      project_repository
+        .get_by_domain(data.domain)
         .then((project) => {
           project_id = project.id;
           is_resolving = false;

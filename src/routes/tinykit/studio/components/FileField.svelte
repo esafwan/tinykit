@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { pb } from "$lib/pocketbase.svelte"
+	import { project_assets } from "$lib/backend"
 	import { Upload, X, Image, File } from "lucide-svelte"
 
 	type FileFieldProps = {
@@ -45,19 +45,7 @@
 
 		uploading = true
 		try {
-			const form = new FormData()
-			for (const file of Array.from(files)) {
-				// Use 'assets+' to append to existing files (Pocketbase convention)
-				form.append("assets+", file)
-			}
-
-			// Get current assets count
-			const project = await pb.collection("_tk_projects").getOne(project_id)
-			const before_count = (project.assets as string[] || []).length
-
-			// Upload files
-			const updated = await pb.collection("_tk_projects").update(project_id, form)
-			const new_assets = (updated.assets as string[] || []).slice(before_count)
+			const new_assets = await project_assets.upload_many(project_id, Array.from(files))
 
 			if (multiple) {
 				const current = Array.isArray(value) ? value : value ? [value] : []

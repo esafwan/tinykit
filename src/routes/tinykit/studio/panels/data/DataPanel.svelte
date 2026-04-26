@@ -15,7 +15,7 @@
   import type { DataRecord } from "../../../types";
   import * as api from "../../../lib/api.svelte";
   import { getProjectContext } from "../../../context";
-  import { pb } from "$lib/pocketbase.svelte";
+  import { project_realtime } from "$lib/backend";
   import { getProjectStore } from "../../project.svelte";
   import FileField from "../../components/FileField.svelte";
   import JsonEditor from "../../components/JsonEditor.svelte";
@@ -28,11 +28,10 @@
   let realtime_unsubscribe: (() => void) | null = null;
 
   onMount(() => {
-    pb.collection("_tk_projects")
-      .subscribe(project_id, (e) => {
-        if (e.action === "update" && selected_file) {
-          // Refresh current collection when data changes
-          const new_data = e.record.data?.[selected_file];
+    project_realtime
+      .subscribe(project_id, (project) => {
+        if (selected_file) {
+          const new_data = project.data?.[selected_file];
           if (new_data) {
             update_file_content(new_data);
           }

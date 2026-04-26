@@ -1,7 +1,7 @@
-// API client functions for tinykit admin interface
-// This version uses the Pocketbase SDK directly for authenticated access
+// API client functions for tinykit admin interface.
+// These helpers now flow through the backend adapter layer where possible.
 
-import { pb } from '$lib/pocketbase.svelte'
+import { auth_client, project_assets, project_repository } from '$lib/backend'
 import { project_service } from '$lib/services/project.svelte'
 import { marked } from 'marked'
 import { transform_content_fields } from '$lib/compiler/init'
@@ -17,27 +17,25 @@ import type {
 	CollectionSchema
 } from "../types"
 
-const COLLECTION = '_tk_projects'
-
 // Helper to get auth headers for API requests
 function get_auth_headers(): Record<string, string> {
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json'
 	}
-	if (pb.authStore.token) {
-		headers['Authorization'] = `Bearer ${pb.authStore.token}`
+	if (auth_client.token) {
+		headers['Authorization'] = `Bearer ${auth_client.token}`
 	}
 	return headers
 }
 
 // Helper to get project and throw if not found
 async function get_project(project_id: string): Promise<Project> {
-	return await pb.collection(COLLECTION).getOne<Project>(project_id)
+	return await project_repository.get(project_id)
 }
 
 // Helper to update project
 async function update_project(project_id: string, data: Partial<Project>): Promise<Project> {
-	return await pb.collection(COLLECTION).update<Project>(project_id, data)
+	return await project_repository.update(project_id, data)
 }
 
 // Snapshots API
@@ -1004,27 +1002,11 @@ export async function update_project_settings(project_id: string, updates: Parti
 
 // Assets API
 export async function upload_asset(project_id: string, file: File): Promise<string> {
-	const project = await get_project(project_id)
-	const existing_assets = project.assets || []
-
-	// Create FormData with the new file appended to existing assets
-	const form_data = new FormData()
-	form_data.append('assets', file)
-
-	// Update project with new asset
-	const updated = await pb.collection(COLLECTION).update<Project>(project_id, form_data)
-
-	// Find the newly added filename (last one in array)
-	const new_assets = updated.assets || []
-	const new_filename = new_assets.find((f: string) => !existing_assets.includes(f)) || new_assets[new_assets.length - 1]
-
-	// Return just the filename (use asset() helper in templates to get full URL)
-	return new_filename
+	return await project_assets.upload(project_id, file)
 }
 
 export async function list_assets(project_id: string): Promise<string[]> {
-	const project = await get_project(project_id)
-	return project.assets || []
+	return await project_assets.list(project_id)
 }
 
 // Convert a filename to a full asset URL (for admin UI previews)
@@ -1041,7 +1023,5 @@ export function asset_url(project_id: string, filename: string, thumb?: string):
 }
 
 export async function delete_asset(project_id: string, filename: string): Promise<void> {
-	const project = await get_project(project_id)
-	const assets = (project.assets || []).filter((f: string) => f !== filename)
-	await pb.collection(COLLECTION).update(project_id, { 'assets-': filename })
+	await project_assets.delete(project_id, filename)
 }

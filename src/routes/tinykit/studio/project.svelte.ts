@@ -1,5 +1,5 @@
 import { setContext, getContext } from 'svelte';
-import { pb } from '$lib/pocketbase.svelte';
+import { project_realtime, project_repository } from '$lib/backend';
 import * as api from '../lib/api.svelte';
 import { apply_builder_theme, builder_themes } from '$lib/builder_themes';
 import type { Project, Snapshot, DesignField, ContentField, ProjectSettings } from '../types';
@@ -97,10 +97,8 @@ export class ProjectStore {
 
     async subscribe() {
         try {
-            this.unsubscribe_fn = await pb.collection('_tk_projects')
-                .subscribe(this.project_id, (e) => {
-                    if (e.action === 'update') {
-                        const incoming = e.record as unknown as Project;
+            this.unsubscribe_fn = await project_realtime
+                .subscribe(this.project_id, (incoming) => {
 
                         // Check what changed
                         const incoming_chat = JSON.stringify(incoming.agent_chat || []);
@@ -147,7 +145,6 @@ export class ProjectStore {
                                 ...(agent_just_finished ? { frontend_code: incoming.frontend_code } : {})
                             };
                         }
-                    }
                 });
         } catch (err) {
             console.warn('[ProjectStore] Failed to subscribe to realtime:', err);
@@ -338,8 +335,7 @@ export class ProjectStore {
         if (!this.project) return;
         // Update local state immediately
         this.project = { ...this.project, ...data };
-        // Persist to server
-        await pb.collection('_tk_projects').update(this.project_id, data);
+        await project_repository.update(this.project_id, data);
     }
 }
 
