@@ -109,6 +109,16 @@ Visit http://localhost:5173/setup to complete setup.
 
 ## Usage
 
+## Frappe + HUF Fork Planning
+
+This fork includes architecture and implementation planning for moving TinyKit from PocketBase toward a Frappe + HUF backend model.
+
+Start here:
+
+- [docs/frappe-huf/README.md](./docs/frappe-huf/README.md)
+- [docs/frappe-huf/implementation-spec.md](./docs/frappe-huf/implementation-spec.md)
+- [AGENTS.md](./AGENTS.md)
+
 ### Domain-Based Routing
 
 Each app gets its own domain. Point multiple domains to one Tinykit server:
