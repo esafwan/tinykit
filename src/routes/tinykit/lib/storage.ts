@@ -1,6 +1,6 @@
 // Storage helpers for tinykit admin interface
 import type { AgentMessage } from "../types"
-import { pb } from "$lib/pocketbase.svelte"
+import { auth_client } from "$lib/backend"
 
 const MESSAGES_KEY = "agent-messages"
 
@@ -36,8 +36,8 @@ function get_auth_headers(): Record<string, string> {
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json'
 	}
-	if (pb.authStore.token) {
-		headers['Authorization'] = `Bearer ${pb.authStore.token}`
+	if (auth_client.token) {
+		headers['Authorization'] = `Bearer ${auth_client.token}`
 	}
 	return headers
 }

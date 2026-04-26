@@ -2,7 +2,7 @@
 	import { Globe, ExternalLink, Loader2, Check, Copy } from "lucide-svelte"
 	import * as Dialog from "$lib/components/ui/dialog"
 	import { Button } from "$lib/components/ui/button"
-	import { pb } from "$lib/pocketbase.svelte"
+	import { auth_client } from "$lib/backend"
 
 	type AvailableDomain = {
 		hostname: string
@@ -36,7 +36,7 @@
 		try {
 			const res = await fetch("/api/domains", {
 				headers: {
-					Authorization: `Bearer ${pb.authStore.token}`
+					Authorization: `Bearer ${auth_client.token}`
 				}
 			})
 			if (res.ok) {

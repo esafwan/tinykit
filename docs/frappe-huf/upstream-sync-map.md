@@ -21,8 +21,10 @@ Instead:
 |---|---|---|
 | `src/lib/pocketbase.svelte.ts` | `src/lib/backend/pocketbase.ts`, `src/lib/backend/auth.svelte.ts` | Keep `src/lib/pocketbase.svelte.ts` as compatibility export surface. |
 | `src/lib/services/project.svelte.ts` | `src/lib/backend/projects.ts` | `project_service` should stay a facade; backend logic belongs in `project_repository`. |
+| `src/lib/services/kit.svelte.ts` | `src/lib/backend/kits.ts` | Keep kit CRUD behind `kit_repository`. |
 | `src/lib/server/pb.ts` | `src/lib/backend/server.ts` | Current server wrapper is a bridge only; later Frappe logic should replace the PocketBase implementation behind it. |
 | `src/routes/tinykit/lib/api.svelte.ts` | uses `project_repository`, `project_assets`, `auth_client` | If upstream adds raw project CRUD here, port it through adapters instead. |
+| `src/routes/tinykit/lib/storage.ts` | uses `auth_client` | Token/header helpers should not read `pb.authStore` directly. |
 | `src/routes/tinykit/studio/project.svelte.ts` | uses `project_realtime`, `project_repository` | Realtime and update behavior should stay adapter-backed. |
 | `src/routes/tinykit/studio/+page.svelte` | uses `project_repository.get_by_domain()` | Domain lookup should stay repository-backed. |
 | `src/routes/tinykit/studio/panels/data/DataPanel.svelte` | uses `project_realtime` | Do not reintroduce direct collection subscriptions here. |
@@ -34,6 +36,7 @@ Instead:
 - `src/lib/backend/pocketbase.ts`
 - `src/lib/backend/auth.svelte.ts`
 - `src/lib/backend/projects.ts`
+- `src/lib/backend/kits.ts`
 - `src/lib/backend/server.ts`
 - `src/lib/backend/index.ts`
 
@@ -64,6 +67,19 @@ Usually:
 
 - logic change belongs in `src/lib/backend/projects.ts`
 - `project_service` should keep delegating
+
+### If upstream changes kit behavior
+
+Compare:
+
+- upstream `src/lib/services/kit.svelte.ts`
+- fork `src/lib/backend/kits.ts`
+- fork `src/lib/services/kit.svelte.ts`
+
+Usually:
+
+- data access change belongs in `src/lib/backend/kits.ts`
+- `kit_service` should remain a thin facade
 
 ### If upstream changes studio-side project loading or realtime logic
 

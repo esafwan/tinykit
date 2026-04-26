@@ -6,7 +6,8 @@
   import { onMount } from "svelte";
   import { project_service } from "$lib/services/project.svelte";
   import { kit_service } from "$lib/services/kit.svelte";
-  import { auth, pb } from "$lib/pocketbase.svelte";
+  import { auth } from "$lib/pocketbase.svelte";
+  import { auth_client } from "$lib/backend";
   import { get_featured_kits_with_templates, type KitWithTemplates, type Template } from "$lib/templates";
   import { processCode, dynamic_iframe_srcdoc, generate_design_css } from "$lib/compiler/init";
 
@@ -153,7 +154,7 @@
     is_creating = true;
     error_message = "";
 
-    if (!auth.is_authenticated || !pb.authStore.isValid) {
+    if (!auth.is_authenticated || !auth_client.token) {
       error_message = "Session expired. Please log in again.";
       is_creating = false;
       setTimeout(() => goto("/login"), 1500);
@@ -208,7 +209,7 @@
     is_creating = true;
     error_message = "";
 
-    if (!auth.is_authenticated || !pb.authStore.isValid) {
+    if (!auth.is_authenticated || !auth_client.token) {
       error_message = "Session expired. Please log in again.";
       is_creating = false;
       setTimeout(() => goto("/login"), 1500);

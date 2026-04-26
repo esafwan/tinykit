@@ -13,7 +13,7 @@
 		TestTube,
 	} from "lucide-svelte";
 	import { get_saved_theme, apply_builder_theme } from "$lib/builder_themes";
-	import { pb } from "$lib/pocketbase.svelte";
+	import { auth_client } from "$lib/backend";
 
 	// Handle server auth expiry - redirect to login
 	function handle_api_error(data: any, status: number): boolean {
@@ -112,7 +112,7 @@
 		try {
 			const res = await fetch("/api/settings?key=llm", {
 				headers: {
-					Authorization: `Bearer ${pb.authStore.token}`,
+					Authorization: `Bearer ${auth_client.token}`,
 				},
 			});
 			const data = await res.json();
@@ -155,7 +155,7 @@
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${pb.authStore.token}`,
+					Authorization: `Bearer ${auth_client.token}`,
 				},
 				body: JSON.stringify({ key: "llm", value }),
 			});
@@ -210,7 +210,7 @@
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${pb.authStore.token}`,
+					Authorization: `Bearer ${auth_client.token}`,
 				},
 				body: JSON.stringify({
 					provider: config.provider,

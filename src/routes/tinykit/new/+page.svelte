@@ -7,7 +7,8 @@
   import { onMount } from "svelte";
   import { project_service } from "$lib/services/project.svelte";
   import { kit_service } from "$lib/services/kit.svelte";
-  import { auth, pb } from "$lib/pocketbase.svelte";
+  import { auth } from "$lib/pocketbase.svelte";
+  import { auth_client } from "$lib/backend";
   import {
     KITS,
     TEMPLATES,
@@ -84,7 +85,7 @@
     // Check LLM configuration status
     try {
       const res = await fetch("/api/settings/llm-status", {
-        headers: { Authorization: `Bearer ${pb.authStore.token}` }
+        headers: { Authorization: `Bearer ${auth_client.token}` }
       });
       if (res.ok) {
         const data = await res.json();
@@ -107,7 +108,7 @@
     is_creating = true;
     error_message = "";
 
-    if (!auth.is_authenticated || !pb.authStore.isValid) {
+    if (!auth.is_authenticated || !auth_client.token) {
       error_message = "Session expired. Please log in again.";
       is_creating = false;
       setTimeout(() => goto("/login"), 1500);
@@ -151,7 +152,7 @@
     is_creating = true;
     error_message = "";
 
-    if (!auth.is_authenticated || !pb.authStore.isValid) {
+    if (!auth.is_authenticated || !auth_client.token) {
       error_message = "Session expired. Please log in again.";
       is_creating = false;
       setTimeout(() => goto("/login"), 1500);
@@ -213,7 +214,7 @@
     is_creating = true;
     error_message = "";
 
-    if (!auth.is_authenticated || !pb.authStore.isValid) {
+    if (!auth.is_authenticated || !auth_client.token) {
       error_message = "Session expired. Please log in again.";
       is_creating = false;
       setTimeout(() => goto("/login"), 1500);

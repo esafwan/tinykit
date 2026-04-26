@@ -13,7 +13,7 @@
     Settings,
     Sparkles,
   } from "lucide-svelte";
-  import { pb } from "$lib/pocketbase.svelte";
+  import { auth_client } from "$lib/backend";
   import type {
     AgentMessage,
     PreviewError,
@@ -175,7 +175,7 @@
     // Check if LLM is configured
     try {
       const res = await fetch("/api/settings/llm-status", {
-        headers: { Authorization: `Bearer ${pb.authStore.token}` },
+        headers: { Authorization: `Bearer ${auth_client.token}` },
       });
       const data = await res.json();
       llm_configured = data.configured;
