@@ -1,11 +1,11 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getProject } from '$lib/server/pb'
+import { server_backend } from '$lib/backend'
 
 // GET /api/projects/:id/export - Export project data
 export const GET: RequestHandler = async ({ params }) => {
 	try {
-		const project = await getProject(params.id)
+		const project = await server_backend.get_project(params.id)
 
 		if (!project) {
 			return json({ error: 'Project not found' }, { status: 404 })

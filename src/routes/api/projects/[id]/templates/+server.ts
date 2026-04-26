@@ -1,14 +1,14 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { updateProject, validateUserToken, unauthorizedResponse } from '$lib/server/pb'
+import { server_backend } from '$lib/backend'
 import { get_template } from '$lib/templates'
 
 // POST /api/projects/:id/templates - Apply a template to project
 export const POST: RequestHandler = async ({ params, request }) => {
 	// Require authentication
-	const user = await validateUserToken(request)
+	const user = await server_backend.validate_user_token(request)
 	if (!user) {
-		return unauthorizedResponse('Authentication required')
+		return server_backend.unauthorized_response('Authentication required')
 	}
 
 	try {
@@ -23,7 +23,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
 			return json({ error: 'Template not found' }, { status: 404 })
 		}
 
-		await updateProject(params.id, {
+		await server_backend.update_project(params.id, {
 			frontend_code: template.frontend_code,
 			design: template.design || [],
 			content: template.content || [],

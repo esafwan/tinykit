@@ -1,6 +1,7 @@
 export { auth, auth_client } from './auth.svelte'
 export { kit_repository } from './kits'
 export { pb, PB_URL } from './pocketbase'
+export { fetch_published_html, get_project_file_url, get_published_html_url } from './project-files'
 export { project_assets, project_realtime, project_repository } from './projects'
 export { server_backend } from './server'
 export type * from './types'

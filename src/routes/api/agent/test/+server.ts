@@ -1,13 +1,13 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { env } from '$env/dynamic/private'
-import { validateUserToken, unauthorizedResponse } from '$lib/server/pb'
+import { server_backend } from '$lib/backend'
 
 export const GET: RequestHandler = async ({ request }) => {
 	// Require authentication
-	const user = await validateUserToken(request)
+	const user = await server_backend.validate_user_token(request)
 	if (!user) {
-		return unauthorizedResponse('Authentication required')
+		return server_backend.unauthorized_response('Authentication required')
 	}
 
 	return json({

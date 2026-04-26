@@ -23,12 +23,15 @@ Instead:
 | `src/lib/services/project.svelte.ts` | `src/lib/backend/projects.ts` | `project_service` should stay a facade; backend logic belongs in `project_repository`. |
 | `src/lib/services/kit.svelte.ts` | `src/lib/backend/kits.ts` | Keep kit CRUD behind `kit_repository`. |
 | `src/lib/server/pb.ts` | `src/lib/backend/server.ts` | Current server wrapper is a bridge only; later Frappe logic should replace the PocketBase implementation behind it. |
+| `pb.files.getURL(...)` usage for project files | `src/lib/backend/project-files.ts` | Centralize published HTML and asset URL generation here. |
 | `src/routes/tinykit/lib/api.svelte.ts` | uses `project_repository`, `project_assets`, `auth_client` | If upstream adds raw project CRUD here, port it through adapters instead. |
 | `src/routes/tinykit/lib/storage.ts` | uses `auth_client` | Token/header helpers should not read `pb.authStore` directly. |
 | `src/routes/tinykit/studio/project.svelte.ts` | uses `project_realtime`, `project_repository` | Realtime and update behavior should stay adapter-backed. |
 | `src/routes/tinykit/studio/+page.svelte` | uses `project_repository.get_by_domain()` | Domain lookup should stay repository-backed. |
 | `src/routes/tinykit/studio/panels/data/DataPanel.svelte` | uses `project_realtime` | Do not reintroduce direct collection subscriptions here. |
 | `src/routes/tinykit/studio/components/FileField.svelte` | uses `project_assets` | Asset upload logic should stay in the asset client. |
+| `src/routes/_tk/data/**` | uses `server_backend` | Project-backed collection record CRUD should go through the server bridge, even when the storage is still PocketBase behind it. |
+| preview, production, and project asset routes | use `server_backend` + `project-files.ts` | Keep route response logic local, but centralize project lookup and file URL generation. |
 
 ## New adapter files introduced in Phase 1
 
@@ -38,6 +41,7 @@ Instead:
 - `src/lib/backend/projects.ts`
 - `src/lib/backend/kits.ts`
 - `src/lib/backend/server.ts`
+- `src/lib/backend/project-files.ts`
 - `src/lib/backend/index.ts`
 
 ## Porting rules for agents
@@ -106,7 +110,36 @@ Compare:
 Usually:
 
 - upload transport belongs in `project_assets`
-- URL generation can stay in caller utilities
+- project file URL generation belongs in `src/lib/backend/project-files.ts`
+
+### If upstream changes published HTML, preview, or asset serving
+
+Compare:
+
+- upstream routes that call `pb.files.getURL(...)`
+- fork `src/lib/backend/project-files.ts`
+- fork `src/lib/backend/server.ts`
+- fork preview/production asset routes
+
+Usually:
+
+- project lookup and auth belong in `server_backend`
+- project file URL generation belongs in `project-files.ts`
+- route-specific redirects and response headers stay in the route
+
+### If upstream changes `_tk/data` collection record APIs
+
+Compare:
+
+- upstream `src/routes/_tk/data/**`
+- fork `src/lib/backend/server.ts`
+- fork route handlers
+
+Usually:
+
+- project fetch/update calls belong in `server_backend`
+- route-level pagination, filtering, schema validation, and origin/rate-limit logic stay in the route
+- file attachment URL generation still belongs in `project-files.ts`
 
 ## What should not come back
 
@@ -115,6 +148,19 @@ During upstream sync, avoid reintroducing:
 - fresh direct `pb.collection('_tk_projects')` calls in studio code
 - new direct auth token reads from `pb.authStore` when `auth_client` is sufficient
 - asset upload logic duplicated across multiple components
+- new scattered `pb.files.getURL(...)` calls outside `src/lib/backend/project-files.ts`
+- new direct route imports from `src/lib/server/pb.ts` when `src/lib/backend/server.ts` already exposes the same capability
+
+## Remaining PocketBase-specific areas after this Phase 1 pass
+
+These are still expected and should be migrated deliberately in later phases rather than piecemeal:
+
+- `src/lib/server/pb.ts`
+  This is still the authoritative server implementation behind `server_backend`.
+- `src/routes/_tk/realtime/[project_id]/+server.ts`
+  Still uses the admin-authenticated PocketBase realtime subscription client directly.
+- setup/settings/auth server routes that manage PocketBase bootstrap or `_tk_settings`
+  These likely want a separate Phase 2 config/settings abstraction instead of ad hoc route edits.
 
 ## If an upstream change does not fit the current abstraction
 

@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getProject, getProjectByDomain, pb } from '$lib/server/pb'
+import { get_project_file_url, server_backend } from '$lib/backend'
 
 /**
  * Assets Proxy API - Serve project assets
@@ -68,12 +68,12 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 		// Get project - either by explicit ID or by domain
 		let project
 		if (project_id) {
-			project = await getProject(project_id)
+			project = await server_backend.get_project(project_id)
 		} else {
 			// Infer from domain
 			const host = request.headers.get('host') || 'localhost'
 			const domain = host.toLowerCase().replace(/:\d+$/, '').replace(/^www\./, '')
-			project = await getProjectByDomain(domain)
+			project = await server_backend.get_project_by_domain(domain)
 		}
 
 		if (!project) {
@@ -87,11 +87,7 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 		}
 
 		// Build Pocketbase file URL
-		const file_url = pb.files.getURL(
-			{ id: project.id, collectionId: project.collectionId || '_tk_projects' },
-			filename,
-			thumb ? { thumb } : undefined
-		)
+		const file_url = get_project_file_url(project, filename, thumb ? { thumb } : undefined)
 
 		// Proxy the file from Pocketbase
 		const response = await fetch(file_url)

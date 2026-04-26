@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getProject, pb } from '$lib/server/pb'
+import { get_project_file_url, server_backend } from '$lib/backend'
 
 /**
  * Assets Proxy API - Serve project assets (path-based project_id)
@@ -63,7 +63,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	}
 
 	try {
-		const project = await getProject(project_id)
+		const project = await server_backend.get_project(project_id)
 
 		if (!project) {
 			throw error(404, 'Project not found')
@@ -76,11 +76,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		}
 
 		// Build Pocketbase file URL
-		const file_url = pb.files.getURL(
-			{ id: project.id, collectionId: project.collectionId || '_tk_projects' },
-			filename,
-			thumb ? { thumb } : undefined
-		)
+		const file_url = get_project_file_url(project, filename, thumb ? { thumb } : undefined)
 
 		// Proxy the file from Pocketbase
 		const response = await fetch(file_url)

@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getProjectByDomain, isSetupComplete, pb } from '$lib/server/pb'
+import { fetch_published_html, server_backend } from '$lib/backend'
 
 /**
  * Catch-all route for SPA support
@@ -8,7 +8,7 @@ import { getProjectByDomain, isSetupComplete, pb } from '$lib/server/pb'
  */
 export const GET: RequestHandler = async ({ locals }) => {
 	// Check if setup is needed first
-	const setup_complete = await isSetupComplete()
+	const setup_complete = await server_backend.is_setup_complete()
 	if (!setup_complete) {
 		throw redirect(302, '/setup')
 	}
@@ -16,15 +16,13 @@ export const GET: RequestHandler = async ({ locals }) => {
 	const domain = locals.domain
 
 	// Try to find a project for this domain
-	const project = await getProjectByDomain(domain)
+	const project = await server_backend.get_project_by_domain(domain)
 
 	if (project) {
 		// Serve the production app (compiled HTML from file attachment)
 		if (project.published_html) {
-			const file_url = pb.files.getURL(project, project.published_html)
-			const response = await fetch(file_url)
-			if (response.ok) {
-				const html = await response.text()
+			const html = await fetch_published_html(project)
+			if (html) {
 				return new Response(html, {
 					headers: {
 						'Content-Type': 'text/html; charset=utf-8'

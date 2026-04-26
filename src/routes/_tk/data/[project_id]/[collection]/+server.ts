@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getProject, pb } from '$lib/server/pb'
+import { server_backend } from '$lib/backend'
 import { check_rate_limit, check_origin, get_client_ip } from '$lib/server/data-security'
 import { validate_schema, generate_id } from '$lib/server/data-utils'
 
@@ -51,7 +51,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 	try {
 		// Get project and validate collection exists
-		const project = await getProject(project_id)
+		const project = await server_backend.get_project(project_id)
 		if (!project) throw error(404, 'Project not found')
 		const data = project.data || {}
 
@@ -109,7 +109,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
 
 	try {
 		// Get project first (needed for origin check and file uploads)
-		const project = await getProject(project_id)
+		const project = await server_backend.get_project(project_id)
 		if (!project) throw error(404, 'Project not found')
 
 		// Security checks
@@ -160,7 +160,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
 		collection_data.records.push(record)
 
 		// Save back to project
-		await pb.collection('_tk_projects').update(project_id, { data })
+		await server_backend.update_project(project_id, { data })
 
 		// Include warnings in response if any
 		const response_body = warnings.length > 0
@@ -258,11 +258,17 @@ async function upload_files_to_assets(
 	}
 
 	// Get current assets count before upload
-	const project = await pb.collection('_tk_projects').getOne(project_id)
+	const project = await server_backend.get_project(project_id)
+	if (!project) {
+		throw error(404, 'Project not found')
+	}
 	const before_count = (project.assets as string[] || []).length
 
 	// Upload all files at once
-	const updated = await pb.collection('_tk_projects').update(project_id, upload_form)
+	const updated = await server_backend.update_project(project_id, upload_form)
+	if (!updated) {
+		throw error(404, 'Project not found')
+	}
 	const new_assets = (updated.assets as string[] || []).slice(before_count)
 
 	// Map uploaded filenames back to fields

@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { env } from '$env/dynamic/private'
-import { getProject, updateProject, createSnapshot, getLLMSettings, validateUserToken, unauthorizedResponse, type LLMSettings } from '$lib/server/pb'
+import { server_backend } from '$lib/backend'
 import { type LLMProvider, type AgentMessage } from '$lib/ai/sdk-agent'
 import { calculateCost } from '$lib/ai/types'
 
@@ -16,7 +16,7 @@ const runningAgents = new Map<string, boolean>()
 
 // Get LLM config from DB or fall back to env vars
 async function getLLMConfig() {
-	const dbSettings = await getLLMSettings()
+	const dbSettings = await server_backend.get_llm_settings()
 
 	if (dbSettings && dbSettings.api_key) {
 		return {
@@ -138,11 +138,11 @@ One-line summary:`
 
 // GET - Get agent history
 export const GET: RequestHandler = async ({ params, request }) => {
-	const user = await validateUserToken(request)
-	if (!user) return unauthorizedResponse('Authentication required')
+	const user = await server_backend.validate_user_token(request)
+	if (!user) return server_backend.unauthorized_response('Authentication required')
 
 	try {
-		const project = await getProject(params.id)
+		const project = await server_backend.get_project(params.id)
 		if (!project) {
 			return json({ error: 'Project not found' }, { status: 404 })
 		}
@@ -157,11 +157,11 @@ export const GET: RequestHandler = async ({ params, request }) => {
 
 // DELETE - Clear agent history
 export const DELETE: RequestHandler = async ({ params, request }) => {
-	const user = await validateUserToken(request)
-	if (!user) return unauthorizedResponse('Authentication required')
+	const user = await server_backend.validate_user_token(request)
+	if (!user) return server_backend.unauthorized_response('Authentication required')
 
 	try {
-		await updateProject(params.id, { agent_chat: [] })
+		await server_backend.update_project(params.id, { agent_chat: [] })
 		return json({ success: true })
 	} catch (error: any) {
 		if (error.status === 404) {
@@ -173,8 +173,8 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
 
 // POST - Send prompt to agent (fire-and-forget, streams to database)
 export const POST: RequestHandler = async ({ params, request, getClientAddress }) => {
-	const user = await validateUserToken(request)
-	if (!user) return unauthorizedResponse('Authentication required')
+	const user = await server_backend.validate_user_token(request)
+	if (!user) return server_backend.unauthorized_response('Authentication required')
 
 	const projectId = params.id
 
@@ -208,7 +208,7 @@ export const POST: RequestHandler = async ({ params, request, getClientAddress }
 		}
 
 		// Get project and LLM config
-		const project = await getProject(projectId)
+		const project = await server_backend.get_project(projectId)
 		if (!project) {
 			return json({ error: 'Project not found' }, { status: 404 })
 		}
@@ -239,7 +239,7 @@ export const POST: RequestHandler = async ({ params, request, getClientAddress }
 		})
 
 		// Save initial state with user message and running assistant
-		await updateProject(projectId, {
+		await server_backend.update_project(projectId, {
 			agent_chat: agentMessages,
 			agent_status: 'running'
 		})
@@ -310,7 +310,7 @@ async function runAgentInBackground(
 		}
 
 		try {
-			await updateProject(projectId, { agent_chat: agentMessages })
+			await server_backend.update_project(projectId, { agent_chat: agentMessages })
 		} catch (err) {
 			console.error('[Agent] Failed to update DB:', err)
 		}
@@ -392,7 +392,7 @@ async function runAgentInBackground(
 			timestamp: Date.now()
 		}
 
-		await updateProject(projectId, {
+		await server_backend.update_project(projectId, {
 			agent_chat: agentMessages,
 			agent_status: 'idle'
 		})
@@ -400,7 +400,7 @@ async function runAgentInBackground(
 		// Generate summary and create snapshot with tool names
 		const summary = await generateSummary(llmConfig, fullResponse, toolCalls)
 		const toolNames = toolCalls.map(t => t.name)
-		await createSnapshot(projectId, summary, toolNames)
+		await server_backend.create_snapshot(projectId, summary, toolNames)
 
 	} catch (error: any) {
 		console.error('[Agent] Background execution failed:', error)
@@ -415,7 +415,7 @@ async function runAgentInBackground(
 			timestamp: Date.now()
 		}
 
-		await updateProject(projectId, {
+		await server_backend.update_project(projectId, {
 			agent_chat: agentMessages,
 			agent_status: 'error'
 		}).catch(console.error)

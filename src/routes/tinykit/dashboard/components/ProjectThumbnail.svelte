@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte"
 	import Icon from "@iconify/svelte"
-	import { pb } from "$lib/pocketbase.svelte"
+	import { get_published_html_url } from "$lib/backend"
 
 	let {
 		compiled_html = "",
@@ -31,10 +31,16 @@
 		// This is the ONLY safe way to show thumbnails - published HTML is pre-compiled
 		if (compiled_html && project_id) {
 			try {
-				const file_url = pb.files.getURL(
-					{ id: project_id, collectionId: collection_id, collectionName: collection_id },
-					compiled_html
-				)
+				const file_url = get_published_html_url({
+					id: project_id,
+					collectionId: collection_id,
+					collectionName: collection_id,
+					published_html: compiled_html
+				})
+				if (!file_url) {
+					is_loading = false
+					return
+				}
 				const response = await fetch(file_url)
 				if (response.ok) {
 					srcdoc = await response.text()

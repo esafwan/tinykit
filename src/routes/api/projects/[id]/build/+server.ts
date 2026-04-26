@@ -1,13 +1,13 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { pb, validateUserToken, unauthorizedResponse } from '$lib/server/pb'
+import { server_backend } from '$lib/backend'
 
 // POST /api/projects/:id/build - Save build output as file attachment
 export const POST: RequestHandler = async ({ params, request }) => {
 	// Require authentication
-	const user = await validateUserToken(request)
+	const user = await server_backend.validate_user_token(request)
 	if (!user) {
-		return unauthorizedResponse('Authentication required')
+		return server_backend.unauthorized_response('Authentication required')
 	}
 
 	try {
@@ -17,13 +17,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
 			return json({ error: 'html is required' }, { status: 400 })
 		}
 
-		// Create a FormData with the HTML file
-		const form_data = new FormData()
-		const blob = new Blob([html], { type: 'text/html' })
-		form_data.append('published_html', blob, 'index.html')
-
-		// Save the built HTML as a file attachment
-		await pb.collection('_tk_projects').update(params.id, form_data)
+		await server_backend.save_published_html(params.id, html)
 
 		return json({
 			success: true,

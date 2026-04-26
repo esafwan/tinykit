@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getProject, pb } from '$lib/server/pb'
+import { fetch_published_html, server_backend } from '$lib/backend'
 
 // Escape HTML to prevent XSS
 function escape_html(str: string): string {
@@ -20,7 +20,7 @@ function escape_html(str: string): string {
 export const GET: RequestHandler = async ({ params }) => {
 	const { id } = params
 
-	const project = await getProject(id)
+	const project = await server_backend.get_project(id)
 
 	if (!project) {
 		throw error(404, 'Project not found')
@@ -28,10 +28,8 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	// Serve the production app (compiled HTML from file attachment)
 	if (project.published_html) {
-		const file_url = pb.files.getURL(project, project.published_html)
-		const response = await fetch(file_url)
-		if (response.ok) {
-			const html = await response.text()
+		const html = await fetch_published_html(project)
+		if (html) {
 			return new Response(html, {
 				headers: {
 					'Content-Type': 'text/html; charset=utf-8'

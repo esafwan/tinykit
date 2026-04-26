@@ -1,17 +1,17 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { createProject, listProjects, validateUserToken, unauthorizedResponse } from '$lib/server/pb'
+import { server_backend } from '$lib/backend'
 import { get_template } from '$lib/templates'
 
 // GET /api/projects - List all projects
 export const GET: RequestHandler = async ({ request }) => {
-	const user = await validateUserToken(request)
+	const user = await server_backend.validate_user_token(request)
 	if (!user) {
-		return unauthorizedResponse('Authentication required')
+		return server_backend.unauthorized_response('Authentication required')
 	}
 
 	try {
-		const projects = await listProjects()
+		const projects = await server_backend.list_projects()
 		return json(projects)
 	} catch (error: any) {
 		console.error('Failed to list projects:', error)
@@ -21,9 +21,9 @@ export const GET: RequestHandler = async ({ request }) => {
 
 // POST /api/projects - Create a new project
 export const POST: RequestHandler = async ({ request, locals }) => {
-	const user = await validateUserToken(request)
+	const user = await server_backend.validate_user_token(request)
 	if (!user) {
-		return unauthorizedResponse('Authentication required')
+		return server_backend.unauthorized_response('Authentication required')
 	}
 
 	try {
@@ -50,7 +50,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			}
 		}
 
-		const project = await createProject({
+		const project = await server_backend.create_project({
 			name,
 			domain: project_domain,
 			kit,

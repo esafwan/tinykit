@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { getProject, pb } from '$lib/server/pb'
+import { server_backend } from '$lib/backend'
 import { check_rate_limit, check_origin, get_client_ip } from '$lib/server/data-security'
 import { validate_schema } from '$lib/server/data-utils'
 
@@ -51,7 +51,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	const { project_id, collection, id } = params
 
 	try {
-		const project = await getProject(project_id)
+		const project = await server_backend.get_project(project_id)
 		if (!project) throw error(404, 'Project not found')
 		const data = project.data || {}
 
@@ -85,7 +85,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 	const { project_id, collection, id } = params
 
 	try {
-		const project = await getProject(project_id)
+		const project = await server_backend.get_project(project_id)
 		if (!project) throw error(404, 'Project not found')
 
 		// Security checks
@@ -137,7 +137,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 		data[collection] = set_records(collection_data, records)
 
 		// Save back to project
-		await pb.collection('_tk_projects').update(project_id, { data })
+		await server_backend.update_project(project_id, { data })
 
 		// Include warnings in response if any
 		const response_body = warnings.length > 0
@@ -222,10 +222,16 @@ async function upload_files_to_assets(
 		}
 	}
 
-	const project = await pb.collection('_tk_projects').getOne(project_id)
+	const project = await server_backend.get_project(project_id)
+	if (!project) {
+		throw error(404, 'Project not found')
+	}
 	const before_count = (project.assets as string[] || []).length
 
-	const updated = await pb.collection('_tk_projects').update(project_id, upload_form)
+	const updated = await server_backend.update_project(project_id, upload_form)
+	if (!updated) {
+		throw error(404, 'Project not found')
+	}
 	const new_assets = (updated.assets as string[] || []).slice(before_count)
 
 	let new_index = 0
@@ -242,7 +248,7 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
 	const { project_id, collection, id } = params
 
 	try {
-		const project = await getProject(project_id)
+		const project = await server_backend.get_project(project_id)
 		if (!project) throw error(404, 'Project not found')
 
 		// Security checks
@@ -267,7 +273,7 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
 		data[collection] = set_records(data[collection], records)
 
 		// Save back to project
-		await pb.collection('_tk_projects').update(project_id, { data })
+		await server_backend.update_project(project_id, { data })
 
 		return new Response(null, { status: 204 })
 	} catch (err: any) {

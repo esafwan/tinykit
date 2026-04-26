@@ -18,6 +18,7 @@ import {
 	removeAvailableDomain,
 	restoreSnapshot,
 	trackAvailableDomain,
+	unauthorizedResponse,
 	updateProject,
 	validateUserToken
 } from '$lib/server/pb'
@@ -50,6 +51,8 @@ export interface ServerBackend {
 	track_available_domain(hostname: string): Promise<void>
 	get_available_domains(): Promise<Array<{ hostname: string; first_seen: string; last_seen: string }>>
 	remove_available_domain(hostname: string): Promise<void>
+	save_published_html(project_id: string, html: string): Promise<Project | null>
+	unauthorized_response(message?: string): Response
 }
 
 export const server_backend: ServerBackend = {
@@ -71,5 +74,12 @@ export const server_backend: ServerBackend = {
 	validate_user_token: validateUserToken,
 	track_available_domain: trackAvailableDomain,
 	get_available_domains: getAvailableDomains,
-	remove_available_domain: removeAvailableDomain
+	remove_available_domain: removeAvailableDomain,
+	async save_published_html(project_id: string, html: string) {
+		const form_data = new FormData()
+		const blob = new Blob([html], { type: 'text/html' })
+		form_data.append('published_html', blob, 'index.html')
+		return updateProject(project_id, form_data)
+	},
+	unauthorized_response: unauthorizedResponse
 }
